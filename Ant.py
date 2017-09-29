@@ -3,6 +3,7 @@ File containing all code for Langton's Ant app.
 """
 
 import tkinter as tk
+from tkinter import ttk
 
 # Most colours from clrs.cc
 RED = "#FF4136"
@@ -57,6 +58,7 @@ class AntControl:
         self.canvas.pack(side=tk.LEFT, expand=1, fill=tk.BOTH)
         self.running = False
         self.direction, self.coord, self.last_callback = None, None, None
+        self.delay = 100
         self.draw()
         self.reset()
 
@@ -106,7 +108,7 @@ class AntControl:
         if self.check_visible(new_coord):
             self.canvas.itemconfig(self.rectangles[new_coord], fill="red")
         self.coord = new_coord
-        self.last_callback = self.master.after(10, self.update)
+        self.last_callback = self.master.after(self.delay, self.update)
 
     def check_visible(self, coord):
         """
@@ -177,6 +179,9 @@ class AntControl:
             for j in range(self.height):
                 self.canvas.scale(self.rectangles[(i, j)], 0, 0, ratio, ratio)
 
+    def update_speed(self, value):
+        self.delay = int(1000/float(value))
+
 
 class Controls:
     """
@@ -216,6 +221,20 @@ class Controls:
             button = tk.Button(self.control_frame, width=5, font=("Courier", 10), text=text,
                                command=command, background=colour, activebackground=acolour)
             button.pack(side=tk.LEFT, padx=1)
+
+        # Make option buttons including speed
+        self.option_frame = tk.Frame(self.frame, padx=10, pady=5, bg=BLACK)
+        self.option_frame.pack(padx=10, pady=5)
+        self.option_label = tk.Label(self.option_frame, text="Options",
+                                     bg=BLACK, fg=WHITE, font=("Courier", 12))
+        self.option_label.pack()
+        self.speed_scale = tk.Scale(self.option_frame, bg=BLUE, orient=tk.HORIZONTAL,
+                                    bd=1, label="Speed", fg=WHITE, font=("Courier", 10),
+                                    showvalue=0, length=200, activebackground=BLUEACTIVE,
+                                    from_=1, to=500, command=self.ant_control.update_speed)
+        self.speed_scale.set(250)
+        self.speed_scale.pack()
+
 
 root = tk.Tk()
 app = Application(root, 50, 50)
