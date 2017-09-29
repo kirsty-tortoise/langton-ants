@@ -51,8 +51,10 @@ class AntControl:
         self.square_size = 10
         self.canvas = tk.Canvas(master,
                                 height=self.height*self.square_size,
-                                width=self.width*self.square_size)
-        self.canvas.pack(side=tk.LEFT)
+                                width=self.width*self.square_size,
+                                background="white")
+        self.canvas.bind("<Configure>", self.configure)
+        self.canvas.pack(side=tk.LEFT, expand=1, fill=tk.BOTH)
         self.running = False
         self.direction, self.coord, self.last_callback = None, None, None
         self.draw()
@@ -163,6 +165,17 @@ class AntControl:
             for j in range(self.height):
                 self.canvas.itemconfig(self.rectangles[(i, j)], fill=self.check_colour((i, j)))
         self.canvas.itemconfig(self.rectangles[self.coord], fill="red")
+
+    def configure(self, event):
+        """
+        Expand square sizes when window is enlarged.
+        """
+        new_size = min(event.width/self.width, event.height/self.height)
+        ratio = new_size / self.square_size
+        self.square_size = new_size
+        for i in range(self.width):
+            for j in range(self.height):
+                self.canvas.scale(self.rectangles[(i, j)], 0, 0, ratio, ratio)
 
 
 class Controls:
