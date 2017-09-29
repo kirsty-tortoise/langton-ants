@@ -1,4 +1,17 @@
 import tkinter as tk
+from tkinter import ttk
+
+# Most colours from clrs.cc
+RED = "#FF4136"
+BLUE = "#0074D9"
+PURPLE = "#B10DC9"
+GREEN = "#2ECC40"
+YELLOW = "#FFDC00"
+BLACK = "#111111"
+WHITE = "#FFFFFF"
+GREENACTIVE = "#228B22"
+REDACTIVE = "#8B0000"
+BLUEACTIVE = "#27408B"
 
 NORTH = 0
 EAST = 1
@@ -27,8 +40,7 @@ class AntControl:
         self.canvas.pack(side=tk.LEFT)
         self.draw()
         self.reset()
-        self.running = True
-        self.update()
+        self.running = False
 
     def move(self, direction, coords):
         x, y = coords
@@ -70,8 +82,9 @@ class AntControl:
         return 0 <= coord[0] < self.width and 0 <= coord[1] < self.height
 
     def stop(self):
-        self.master.after_cancel(self.last_callback)
-        self.running = False
+        if self.running:
+            self.master.after_cancel(self.last_callback)
+            self.running = False
     
     def start(self):
         if not self.running:
@@ -108,14 +121,34 @@ class Controls:
     def __init__(self, master, ant_control):
         self.master = master
         self.ant_control = ant_control
-        self.frame = tk.Frame(self.master)
-        self.frame.pack(side=tk.LEFT)
-        self.stop_button = tk.Button(self.frame, text="STOP", command=ant_control.stop)
-        self.stop_button.pack()
-        self.start_button = tk.Button(self.frame, text="START", command=ant_control.start)
-        self.start_button.pack()
-        self.reset_button = tk.Button(self.frame, text="RESET", command=ant_control.reset)
-        self.reset_button.pack()
+        self.frame = tk.Frame(self.master, background=PURPLE)
+        self.frame.pack(side=tk.LEFT, fill=tk.BOTH)
+
+        self.title = tk.Label(self.frame, text="Langton's Ant", font=("Courier", 30), bg=PURPLE)
+        self.title.pack()
+
+        # Add description
+        description_file = open("description.txt", "r")
+        self.description_frame = tk.Frame(self.frame, padx=10, pady=5, bg=BLACK)
+        self.description_frame.pack(padx=10, pady=5)
+        self.description_text = tk.Label(self.description_frame, text=description_file.read(),
+                                         bg=BLACK, fg=WHITE, wraplength=500, justify=tk.LEFT,
+                                         font=("Courier", 10))
+        self.description_text.pack()
+        description_file.close()
+
+        # Make stop, start, reset control buttons
+        self.control_frame = tk.Frame(self.frame, padx=10, pady=5, bg=BLACK)
+        self.control_frame.pack(padx=10, pady=5)
+        tk.Label(self.control_frame, text="Controls", bg=BLACK, fg=WHITE, font=("Courier", 12)).pack()
+        buttons = [("START", self.ant_control.start, GREEN, GREENACTIVE),
+                   ("STOP", self.ant_control.stop, RED, REDACTIVE),
+                   ("RESET", self.ant_control.reset, BLUE, BLUEACTIVE),
+                  ]
+        for text, command, colour, acolour in buttons:
+            button = tk.Button(self.control_frame, width=5, font=("Courier", 10), text=text,
+                               command=command, background=colour, activebackground=acolour)
+            button.pack(side=tk.LEFT, padx=1)
 
 root = tk.Tk()
 app = Application(root, 50, 50)
