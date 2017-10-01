@@ -51,8 +51,8 @@ class AntControl:
         self.width, self.height = width, height
         self.square_size = 10
         self.canvas = tk.Canvas(master,
-                                height=self.height*self.square_size,
-                                width=self.width*self.square_size,
+                                height=(2*self.height+1)*self.square_size,
+                                width=(2*self.width+1)*self.square_size,
                                 background="white")
         self.canvas.bind("<Configure>", self.configure)
         self.canvas.pack(side=tk.LEFT, expand=1, fill=tk.BOTH)
@@ -114,7 +114,7 @@ class AntControl:
         """
         Checks a coordinate is on the displayed grid
         """
-        return 0 <= coord[0] < self.width and 0 <= coord[1] < self.height
+        return coord in self.rectangles
 
     def stop(self):
         """
@@ -137,7 +137,7 @@ class AntControl:
         Returns the ant to the starting position and makes the grid all white.
         Doesn't change whether the ant is running.
         """
-        self.coord = (self.width//2, self.height//2)
+        self.coord = (0, 0)
         self.direction = NORTH
         self.blacks = set()
         self.redraw()
@@ -147,13 +147,15 @@ class AntControl:
         Sets up all rectangles displayed on screen
         """
         self.rectangles = dict()
-        total_height = self.square_size*self.height
-        for i in range(self.width):
-            for j in range(self.height):
-                id_ = self.canvas.create_rectangle(i*self.square_size,
-                                                   total_height - (j+1)*self.square_size,
-                                                   (i+1)*self.square_size,
-                                                   total_height - j*self.square_size,
+        total_height = self.square_size*(2*self.height + 1)
+        for i in range(-self.width, self.width+1):
+            for j in range(-self.height, self.height+1):
+                i_ = i + self.width
+                j_ = j + self.height
+                id_ = self.canvas.create_rectangle(i_*self.square_size,
+                                                   total_height - (j_+1)*self.square_size,
+                                                   (i_+1)*self.square_size,
+                                                   total_height - j_*self.square_size,
                                                    fill="white",
                                                    outline="")
                 self.rectangles[(i, j)] = id_
@@ -163,24 +165,31 @@ class AntControl:
         Redraws the whole grid.
         Used after major change to blacks.
         """
-        for i in range(self.width):
-            for j in range(self.height):
-                self.canvas.itemconfig(self.rectangles[(i, j)], fill=self.check_colour((i, j)))
+        for i, j in self.rectangles:
+            self.canvas.itemconfig(self.rectangles[(i, j)], fill=self.check_colour((i, j)))
         self.canvas.itemconfig(self.rectangles[self.coord], fill="red")
 
     def configure(self, event):
         """
         Expand square sizes when window is enlarged.
         """
-        new_size = min(event.width/self.width, event.height/self.height)
+        new_size = min(event.width/(2*self.width+1), event.height/(2*self.height+1))
         ratio = new_size / self.square_size
         self.square_size = new_size
-        for i in range(self.width):
-            for j in range(self.height):
-                self.canvas.scale(self.rectangles[(i, j)], 0, 0, ratio, ratio)
+        for i, j in self.rectangles:
+            self.canvas.scale(self.rectangles[(i, j)], 0, 0, ratio, ratio)
 
     def update_speed(self, value):
+        """
+        Update speed of animation (when slider moved)
+        """
         self.delay = int(1000/float(value))
+
+    def update_zoom(self, value):
+        """
+        Change zoom of canvas
+        """
+        print("SAD TIMES")
 
 
 class Controls:
@@ -228,14 +237,18 @@ class Controls:
         self.option_label = tk.Label(self.option_frame, text="Options",
                                      bg=BLACK, fg=WHITE, font=("Courier", 12))
         self.option_label.pack()
-        self.speed_scale = tk.Scale(self.option_frame, bg=BLUE, orient=tk.HORIZONTAL,
-                                    bd=1, label="Speed", fg=WHITE, font=("Courier", 10),
-                                    showvalue=0, length=200, activebackground=BLUEACTIVE,
-                                    from_=1, to=500, command=self.ant_control.update_speed)
-        self.speed_scale.set(250)
-        self.speed_scale.pack()
+
+        options = [("Speed", BLUE, BLUEACTIVE, self.ant_control.update_speed),
+                   ("Zoom", RED, REDACTIVE, self.ant_control.update_zoom)]
+        for label, colour, acolour, callback in options:
+            option_scale = tk.Scale(self.option_frame, bg=colour, orient=tk.HORIZONTAL,
+                                    bd=1, label=label, fg=WHITE, font=("Courier", 10),
+                                    showvalue=0, length=200, activebackground=acolour,
+                                    from_=1, to=500, command=callback, highlightthickness=0)
+            option_scale.set(250)
+            option_scale.pack(pady=2)
 
 
 root = tk.Tk()
-app = Application(root, 50, 50)
+app = Application(root, 25, 25)
 root.mainloop()
