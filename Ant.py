@@ -46,13 +46,14 @@ class AntControl:
     """
     Class to control the ant and draws the board.
     """
-    def __init__(self, master, width, height):
+    def __init__(self, master, max_x, max_y):
         self.master = master
-        self.width, self.height = width, height
+        self.max_x, self.max_y = max_x, max_y
+        self.width, self.height = 2*self.max_x + 1, 2*self.max_y + 1
         self.square_size = 10
         self.canvas = tk.Canvas(master,
-                                height=(2*self.height+1)*self.square_size,
-                                width=(2*self.width+1)*self.square_size,
+                                height=self.height*self.square_size,
+                                width=self.width*self.square_size,
                                 background="white")
         self.canvas.bind("<Configure>", self.configure)
         self.canvas.pack(side=tk.LEFT, expand=1, fill=tk.BOTH)
@@ -146,12 +147,13 @@ class AntControl:
         """
         Sets up all rectangles displayed on screen
         """
+        self.canvas.delete("all")
         self.rectangles = dict()
-        total_height = self.square_size*(2*self.height + 1)
-        for i in range(-self.width, self.width+1):
-            for j in range(-self.height, self.height+1):
-                i_ = i + self.width
-                j_ = j + self.height
+        total_height = self.square_size*self.height
+        for i in range(-self.max_x, self.max_x+1):
+            for j in range(-self.max_y, self.max_x+1):
+                i_ = i + self.max_x
+                j_ = j + self.max_y
                 id_ = self.canvas.create_rectangle(i_*self.square_size,
                                                    total_height - (j_+1)*self.square_size,
                                                    (i_+1)*self.square_size,
@@ -167,13 +169,14 @@ class AntControl:
         """
         for i, j in self.rectangles:
             self.canvas.itemconfig(self.rectangles[(i, j)], fill=self.check_colour((i, j)))
-        self.canvas.itemconfig(self.rectangles[self.coord], fill="red")
+        if self.check_visible(self.coord):
+            self.canvas.itemconfig(self.rectangles[self.coord], fill="red")
 
     def configure(self, event):
         """
         Expand square sizes when window is enlarged.
         """
-        new_size = min(event.width/(2*self.width+1), event.height/(2*self.height+1))
+        new_size = min(event.width/self.width, event.height/self.height)
         ratio = new_size / self.square_size
         self.square_size = new_size
         for i, j in self.rectangles:
@@ -189,7 +192,12 @@ class AntControl:
         """
         Change zoom of canvas
         """
-        print("SAD TIMES")
+        self.max_x, self.max_y = int(value), int(value)
+        self.width, self.height = 2*self.max_x + 1, 2*self.max_y + 1
+        self.square_size = int(min(float(self.canvas.winfo_width())/self.width, 
+                                   float(self.canvas.winfo_height())/self.height))
+        self.draw()
+        self.redraw()
 
 
 class Controls:
@@ -238,14 +246,14 @@ class Controls:
                                      bg=BLACK, fg=WHITE, font=("Courier", 12))
         self.option_label.pack()
 
-        options = [("Speed", BLUE, BLUEACTIVE, self.ant_control.update_speed),
-                   ("Zoom", RED, REDACTIVE, self.ant_control.update_zoom)]
-        for label, colour, acolour, callback in options:
+        options = [("Speed", BLUE, BLUEACTIVE, self.ant_control.update_speed, 1, 500, 250),
+                   ("Zoom", RED, REDACTIVE, self.ant_control.update_zoom, 1, 50, 25)]
+        for label, colour, acolour, callback, from_, to, initial  in options:
             option_scale = tk.Scale(self.option_frame, bg=colour, orient=tk.HORIZONTAL,
                                     bd=1, label=label, fg=WHITE, font=("Courier", 10),
                                     showvalue=0, length=200, activebackground=acolour,
-                                    from_=1, to=500, command=callback, highlightthickness=0)
-            option_scale.set(250)
+                                    from_=from_, to=to, command=callback, highlightthickness=0)
+            option_scale.set(initial)
             option_scale.pack(pady=2)
 
 
